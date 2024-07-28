@@ -57,7 +57,10 @@ def test_model(loader_obj, model_, linear=True) -> None:
         model_input = tmp_image.reshape(28 * 28)
     else:
         model_input = tmp_image.reshape(1, 1, 28, 28)
-    output = model_(model_input)
+
+    model_.eval()
+    with torch.inference_mode():
+        output = model_(model_input)
     plt.imshow(output.detach().numpy().reshape(28, 28))
     plt.title("Model's Regenerated Picture")
     plt.show()
@@ -74,6 +77,7 @@ def train_model(
     epoch_num: int = 1,
     model_linear=True,
 ) -> nn.Module:
+    """Train the input model with optimizer and loss function."""
     train_loss = []
 
     for epoch in range(epoch_num):
@@ -110,13 +114,13 @@ def train_model(
 
 def add_noise(img_, noise_int: float) -> torch.Tensor:
     """Add noise to the given image.
-    
+
     Args:
         img_:
             The given image.
         noise_int:
             The intensity of the noise, varies between 0 and 1.
-    
+
     Returns:
         A tensor of the noisy image.
     """
@@ -132,6 +136,7 @@ def add_noise(img_, noise_int: float) -> torch.Tensor:
 def noisy_test(
     loader_obj, model_: nn.Module, linear: bool = True, noise_intensity: float = 0.2
 ):
+    """Test the model by adding noise to the image."""
     batch_iter = iter(loader_obj)
     batch_images = next(batch_iter)
     tmp_image = batch_images[0][0, 0, :, :]
@@ -150,7 +155,10 @@ def noisy_test(
         model_input = noisy_img.reshape(28 * 28)
     else:
         model_input = noisy_img.reshape(1, 1, 28, 28)
-    output = model_(model_input)
+
+    model_.eval()
+    with torch.inference_mode():
+        output = model_(model_input)
     plt.imshow(output.detach().numpy().reshape(28, 28))
     plt.title("Model's Regenerated Image")
     plt.show()
@@ -159,6 +167,7 @@ def noisy_test(
 
 
 def image_show(img_, img_title: str):
+    """Convert the batches to grids and show image."""
     img_ = torchvision.utils.make_grid(img_)
     npimg = img_.numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
@@ -176,7 +185,9 @@ def test_cifar(cifar_model, data_loader_):
     # show images by cinverting batches to grids
     image_show(images, "Original Image")
 
-    out_batch = cifar_model(images)
+    cifar_model.eval()
+    with torch.inference_mode():
+        out_batch = cifar_model(images)
     image_show(out_batch, "Model's Regenerated Image")
 
     return
