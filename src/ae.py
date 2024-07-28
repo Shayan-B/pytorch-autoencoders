@@ -1,4 +1,5 @@
 import torch
+import torchvision
 
 import torch.nn as nn
 
@@ -33,7 +34,17 @@ def make_model(model_object, lr_rate=0.001, compress_=None):
     return model_, optimizer_, loss_
 
 
-def test_model(loader_obj, model_, linear=True):
+def test_model(loader_obj, model_, linear=True) -> None:
+    """Test the output of the autoencoder model by showing the images.
+
+    Args:
+        loader_obj:
+            The object of the loader for data batches.
+        model_:
+            The model which we want to test the output.
+        linear:
+            If te model is linear or CNN.
+    """
     batch_iter = iter(loader_obj)
     batch_images = next(batch_iter)
     tmp_image = batch_images[0][0, 0, :, :]
@@ -55,14 +66,14 @@ def test_model(loader_obj, model_, linear=True):
 
 
 def train_model(
-    model_obj,
+    model_obj: nn.Module,
     optimizer_obj,
     loss_obj,
     loader_obj,
-    batch_s,
-    epoch_num=1,
+    batch_s: int,
+    epoch_num: int = 1,
     model_linear=True,
-):
+) -> nn.Module:
     train_loss = []
 
     for epoch in range(epoch_num):
@@ -97,17 +108,30 @@ def train_model(
     return model_obj
 
 
-def add_noise(img_, noise_int: float):
-    noise =  np.random.normal(loc=0, scale=1, size=img_.shape)
+def add_noise(img_, noise_int: float) -> torch.Tensor:
+    """Add noise to the given image.
     
-    #noise overlaid over image
-    noisy = np.clip((img_.numpy() + noise*noise_int),0,1)
+    Args:
+        img_:
+            The given image.
+        noise_int:
+            The intensity of the noise, varies between 0 and 1.
+    
+    Returns:
+        A tensor of the noisy image.
+    """
+    noise = np.random.normal(loc=0, scale=1, size=img_.shape)
+
+    # noise overlaid over image
+    noisy = np.clip((img_.numpy() + noise * noise_int), 0, 1)
     noisy_tensor = torch.tensor(noisy, dtype=torch.float).reshape(1, 1, 28, 28)
 
     return noisy_tensor
 
 
-def noisy_test(loader_obj, model_: nn.Sequential, linear: bool = True, noise_intensity: float = 0.2):
+def noisy_test(
+    loader_obj, model_: nn.Module, linear: bool = True, noise_intensity: float = 0.2
+):
     batch_iter = iter(loader_obj)
     batch_images = next(batch_iter)
     tmp_image = batch_images[0][0, 0, :, :]
@@ -128,7 +152,31 @@ def noisy_test(loader_obj, model_: nn.Sequential, linear: bool = True, noise_int
         model_input = noisy_img.reshape(1, 1, 28, 28)
     output = model_(model_input)
     plt.imshow(output.detach().numpy().reshape(28, 28))
-    plt.title("Model's Regenerated Picture")
+    plt.title("Model's Regenerated Image")
     plt.show()
+
+    return
+
+
+def image_show(img_, img_title: str):
+    img_ = torchvision.utils.make_grid(img_)
+    npimg = img_.numpy()
+    plt.imshow(np.transpose(npimg, (1, 2, 0)))
+    plt.title(img_title)
+    plt.show()
+
+    return
+
+
+def test_cifar(cifar_model, data_loader_):
+    # get some random training images
+    dataiter = iter(data_loader_)
+    images, labels = next(dataiter)
+
+    # show images by cinverting batches to grids
+    image_show(images, "Original Image")
+
+    out_batch = cifar_model(images)
+    image_show(out_batch, "Model's Regenerated Image")
 
     return
